@@ -22,3 +22,7 @@ def board_to_array(board):
             index += 1
 
     return np.flip(myboard, axis=0)
+
+
+def get_squares():
+    return np.flip(np.array(chess.SQUARE_NAMES).reshape((8, 8)), axis=0)
