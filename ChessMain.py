@@ -1,6 +1,7 @@
 import chess
 import pygame as p
-from utils import board_to_array, get_squares
+import numpy as np
+from utils import board_to_array, get_square_indexes, get_squares
 
 WIDTH = HEIGHT = 512
 DIMENSION = 8
@@ -9,6 +10,7 @@ MAX_FPS = 15  # ? For animations
 IMAGES = {}
 
 SQUARES = get_squares()
+SQUARE_INDEXES = get_square_indexes()
 
 
 def load_images():
@@ -51,38 +53,47 @@ def main():
                 running = False
             # ! Mouse Handlers
             elif e.type == p.MOUSEBUTTONDOWN:
-                location = p.mouse.get_pos()
-                col = location[0] // SQ_SIZE
-                row = location[1] // SQ_SIZE
 
-                if game_state[row][col] == None and len(player_clicks) == 0:
-                    pass
-                elif sq_selected == (row, col):
-                    # TODO: Deselect the selected square
-                    sq_selected = ()
-                    player_clicks = []
-                elif len(player_clicks) == 0:
-                    piece = chess.Piece.from_symbol(
-                        board.piece_at(chess.parse_square(SQUARES[row][row])).symbol()
-                    )
-                    if piece.color == board.turn:
+                if not board.is_game_over():
+                    location = p.mouse.get_pos()
+                    col = location[0] // SQ_SIZE
+                    row = location[1] // SQ_SIZE
+
+                    if game_state[row][col] == None and len(player_clicks) == 0:
+                        pass
+                    elif sq_selected == (row, col):
+                        # TODO: Deselect the selected square
+                        sq_selected = ()
+                        player_clicks = []
+                    elif len(player_clicks) == 0:
+                        # piece = get_piece_on(board, SQUARES[row][col])
+                        if (
+                            board.color_at(chess.parse_square(SQUARES[row][col]))
+                            == board.turn
+                        ):
+                            sq_selected = (row, col)
+                            player_clicks.append(sq_selected)
+                    else:
+                        if (
+                            board.color_at(chess.parse_square(SQUARES[row][col]))
+                            == board.turn
+                        ):
+                            sq_selected = ()
+                            player_clicks = []
                         sq_selected = (row, col)
                         player_clicks.append(sq_selected)
-                else:
-                    sq_selected = (row, col)
-                    player_clicks.append(sq_selected)
 
-                if len(player_clicks) == 2:
-                    # TODO: Move the piece
-                    from_square = SQUARES[player_clicks[0][0]][player_clicks[0][1]]
-                    to_square = SQUARES[player_clicks[1][0]][player_clicks[1][1]]
-                    move = chess.Move.from_uci(from_square + to_square)
-                    if move in board.legal_moves:
-                        board.push(move)
+                    if len(player_clicks) == 2:
+                        # TODO: Move the piece
+                        from_square = SQUARES[player_clicks[0][0]][player_clicks[0][1]]
+                        to_square = SQUARES[player_clicks[1][0]][player_clicks[1][1]]
+                        move = chess.Move.from_uci(from_square + to_square)
+                        if move in board.legal_moves:
+                            board.push(move)
 
-                    # * Clear the vars
-                    sq_selected = ()
-                    player_clicks = []
+                        # * Clear the vars
+                        sq_selected = ()
+                        player_clicks = []
 
             # ! Key Handlers
             elif e.type == p.KEYDOWN:
@@ -95,15 +106,74 @@ def main():
                     else:
                         print("No moves to undo!")
 
+                if e.key == p.K_r:
+                    board.reset()
+                    sq_selected = ()
+                    player_clicks = []
+
             # ! Update Game State after any event
             game_state = board_to_array(board)
-        draw_game_state(screen, game_state)
+
+        draw_game_state(screen, game_state, board, sq_selected)
+
+        if board.is_game_over():
+            winner = None
+            termination = None
+            outcome = board.outcome(claim_draw=True)
+
+            termination = get_termination_type(outcome.termination.value)
+
+            if outcome.winner is not None:
+                winner = "White" if outcome.winner else "Black"
+                text = str(winner + " Wins, By " + termination)
+                size = 42
+            else:
+                text = str("Drawn due to " + termination)
+                size = 32
+            drawText(screen, text, size)
+
         clock.tick(MAX_FPS)
         p.display.flip()
 
 
-def draw_game_state(screen, game_state):
+def highlight_squares(screen, board, sq_selected):
+    if board.is_check():
+        # TODO: Handle Check Highlighting
+        s = p.Surface((SQ_SIZE, SQ_SIZE))
+        s.set_alpha(200)  # Transperancy value
+        s.fill(p.Color("red"))
+        row, col = np.where(SQUARE_INDEXES == board.king(board.turn))
+        screen.blit(s, (col * SQ_SIZE, row * SQ_SIZE))
+
+    if sq_selected != ():
+        squares_to_highlight = []
+        r, c = sq_selected
+        selected_square_index = SQUARE_INDEXES[r, c]
+        selected_square = chess.parse_square(SQUARES[r][c])
+
+        if board.color_at(selected_square) == board.turn:
+
+            # TODO: Highlight the square
+            s = p.Surface((SQ_SIZE, SQ_SIZE))
+            s.set_alpha(100)  # Transperancy value
+            s.fill(p.Color("blue"))
+            screen.blit(s, (c * SQ_SIZE, r * SQ_SIZE))
+
+            # TODO: Highlight moves from that square
+            s.fill(p.Color("yellow"))
+
+            for move in board.legal_moves:
+                if move.from_square == selected_square:
+                    squares_to_highlight.append(move.to_square)
+            # attacked_squares = list(board.attacks(selected_square))
+            for sq in squares_to_highlight:
+                row, col = np.where(SQUARE_INDEXES == sq)
+                screen.blit(s, (col * SQ_SIZE, row * SQ_SIZE))
+
+
+def draw_game_state(screen, game_state, board, sq_selected):
     drawBoard(screen)
+    highlight_squares(screen, board, sq_selected)
     drawPieces(screen, game_state)
 
 
@@ -126,6 +196,35 @@ def drawPieces(screen, game_state):
                 screen.blit(
                     IMAGES[piece], p.Rect(c * SQ_SIZE, r * SQ_SIZE, SQ_SIZE, SQ_SIZE)
                 )
+
+
+def get_termination_type(termination):
+    if termination == 1:
+        return "CheckMate"
+    elif termination == 2:
+        return "StaleMate"
+    elif termination == 3:
+        return "Insufficient Material"
+    elif termination == 4:
+        return "Seventy Five Moves"
+    elif termination == 5:
+        return "Five fold repetition"
+    elif termination == 6:
+        return "Fifty Moves"
+    elif termination == 7:
+        return "Three fold repetition"
+
+
+def drawText(screen, text, size):
+    font = p.font.SysFont("Helvitca", size, True, False)
+    text_object = font.render(text, 0, p.Color("Black"))
+    text_location = p.Rect(0, 0, WIDTH, HEIGHT).move(
+        WIDTH / 2 - text_object.get_width() / 2,
+        HEIGHT / 2 - text_object.get_height() / 2,
+    )
+    screen.blit(text_object, text_location)
+    text_object = font.render(text, 0, p.Color("Blue"))
+    screen.blit(text_object, text_location.move(1, 1))
 
 
 if __name__ == "__main__":
