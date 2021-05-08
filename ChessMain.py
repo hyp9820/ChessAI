@@ -12,6 +12,10 @@ IMAGES = {}
 SQUARES = get_squares()
 SQUARE_INDEXES = get_square_indexes()
 
+"""
+TODO: Load all Images
+"""
+
 
 def load_images():
     pieces = {
@@ -136,6 +140,11 @@ def main():
         p.display.flip()
 
 
+"""
+TODO: Highlight the squares 
+"""
+
+
 def highlight_squares(screen, board, sq_selected):
     if board.is_check():
         # TODO: Handle Check Highlighting
@@ -171,10 +180,20 @@ def highlight_squares(screen, board, sq_selected):
                 screen.blit(s, (col * SQ_SIZE, row * SQ_SIZE))
 
 
+"""
+TODO: Render the Game
+"""
+
+
 def draw_game_state(screen, game_state, board, sq_selected):
     drawBoard(screen)
     highlight_squares(screen, board, sq_selected)
     drawPieces(screen, game_state)
+
+
+"""
+TODO: Draw the board
+"""
 
 
 def drawBoard(screen):
@@ -188,6 +207,11 @@ def drawBoard(screen):
             )
 
 
+"""
+TODO: Draw the pieces
+"""
+
+
 def drawPieces(screen, game_state):
     for r in range(DIMENSION):
         for c in range(DIMENSION):
@@ -196,6 +220,11 @@ def drawPieces(screen, game_state):
                 screen.blit(
                     IMAGES[piece], p.Rect(c * SQ_SIZE, r * SQ_SIZE, SQ_SIZE, SQ_SIZE)
                 )
+
+
+"""
+TODO: Get the termination type
+"""
 
 
 def get_termination_type(termination):
@@ -213,6 +242,11 @@ def get_termination_type(termination):
         return "Fifty Moves"
     elif termination == 7:
         return "Three fold repetition"
+
+
+"""
+TODO: Draw the game over text
+"""
 
 
 def drawText(screen, text, size):
