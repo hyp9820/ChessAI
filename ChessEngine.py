@@ -12,9 +12,9 @@ import tensorflow.keras.callbacks as callbacks
 print(tf.__version__)
 
 stockfish = Stockfish(r"..\stockfish_13_win_x64_bmi2\stockfish_13_win_x64_bmi2")
-stockfish.set_skill_level(0)
-# stockfish.set_elo_rating(100)
-# stockfish.set_depth(1)
+# stockfish.set_skill_level(0)
+stockfish.set_elo_rating(100)
+stockfish.set_depth(1)
 
 
 def get_stockfish_move(board):

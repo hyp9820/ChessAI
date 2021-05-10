@@ -55,6 +55,7 @@ def main():
     game_state = board_to_array(board)
 
     running = True
+    automate = False
     sq_selected = ()  # ? last click of the user (tuple: (row, column))
     player_clicks = []  # ? Keep track of player clicks (two_tuples: [(6,4), (4,4)])
     while running:
@@ -67,47 +68,59 @@ def main():
 
             # ! Mouse Handlers
             elif e.type == p.MOUSEBUTTONDOWN:
+                if not automate:
+                    if not board.is_game_over():
+                        location = p.mouse.get_pos()
+                        col = location[0] // SQ_SIZE
+                        row = location[1] // SQ_SIZE
 
-                if not board.is_game_over():
-                    location = p.mouse.get_pos()
-                    col = location[0] // SQ_SIZE
-                    row = location[1] // SQ_SIZE
-
-                    if game_state[row][col] == None and len(player_clicks) == 0:
-                        pass
-                    elif sq_selected == (row, col):
-                        # TODO: Deselect the selected square
-                        sq_selected = ()
-                        player_clicks = []
-                    elif len(player_clicks) == 0:
-                        # piece = get_piece_on(board, SQUARES[row][col])
-                        if (
-                            board.color_at(chess.parse_square(SQUARES[row][col]))
-                            == board.turn
-                        ):
-                            sq_selected = (row, col)
-                            player_clicks.append(sq_selected)
-                    else:
-                        if (
-                            board.color_at(chess.parse_square(SQUARES[row][col]))
-                            == board.turn
-                        ):
+                        if game_state[row][col] == None and len(player_clicks) == 0:
+                            pass
+                        elif sq_selected == (row, col):
+                            # TODO: Deselect the selected square
                             sq_selected = ()
                             player_clicks = []
-                        sq_selected = (row, col)
-                        player_clicks.append(sq_selected)
+                        elif len(player_clicks) == 0:
+                            # piece = get_piece_on(board, SQUARES[row][col])
+                            if (
+                                board.color_at(chess.parse_square(SQUARES[row][col]))
+                                == board.turn
+                            ):
+                                sq_selected = (row, col)
+                                player_clicks.append(sq_selected)
+                        else:
+                            if (
+                                board.color_at(chess.parse_square(SQUARES[row][col]))
+                                == board.turn
+                            ):
+                                sq_selected = ()
+                                player_clicks = []
+                            sq_selected = (row, col)
+                            player_clicks.append(sq_selected)
 
-                    if len(player_clicks) == 2:
-                        # TODO: Move the piece
-                        from_square = SQUARES[player_clicks[0][0]][player_clicks[0][1]]
-                        to_square = SQUARES[player_clicks[1][0]][player_clicks[1][1]]
-                        move = chess.Move.from_uci(from_square + to_square)
-                        if move in board.legal_moves:
-                            board.push(move)
+                        if len(player_clicks) == 2:
+                            # TODO: Move the piece
+                            from_square = SQUARES[player_clicks[0][0]][
+                                player_clicks[0][1]
+                            ]
+                            to_square = SQUARES[player_clicks[1][0]][
+                                player_clicks[1][1]
+                            ]
+                            move = chess.Move.from_uci(from_square + to_square)
+                            if (
+                                move.to_square in SQUARE_INDEXES[0]
+                                or move.to_square in SQUARE_INDEXES[7]
+                            ):  # ?  the to square is 1st or 8th rank
+                                if (
+                                    board.piece_type_at(move.from_square) == 1
+                                ):  # ? Piece at from square is a pawn
+                                    move.promotion = 5
+                            if move in board.legal_moves:
+                                board.push(move)
 
-                        # * Clear the vars
-                        sq_selected = ()
-                        player_clicks = []
+                            # * Clear the vars
+                            sq_selected = ()
+                            player_clicks = []
 
             # ! Key Handlers
             elif e.type == p.KEYDOWN:
@@ -126,9 +139,27 @@ def main():
                     sq_selected = ()
                     player_clicks = []
 
-            # ! Update Game State after any event
-            game_state = board_to_array(board)
+                if e.key == p.K_a:
+                    automate = not automate
 
+        # TODO: Our Model vs Stockfish
+        if automate:
+            if not board.is_game_over():
+                if board.turn:
+                    # ! Our Model's Engine
+                    move = get_ai_move(board, 1, "white")
+                    board.push(move)
+                if not board.turn:
+                    # ! Stockfish Engine
+                    p.time.delay(1500)
+                    move = get_stockfish_move(board)
+                    board.push(move)
+
+            else:
+                automate = not automate
+
+        # * Update Game State on every iteration
+        game_state = board_to_array(board)
         draw_game_state(screen, game_state, board, sq_selected)
 
         if board.is_game_over():
@@ -150,8 +181,10 @@ def main():
         clock.tick(MAX_FPS)
         p.display.flip()
 
-        # ! AI Move
-        push_ai_move(board)
+        # TODO: Human vs Our Model
+        if not board.is_game_over():
+            if not board.turn:
+                board.push(ai_move(board))
 
 
 """
@@ -159,16 +192,12 @@ TODO: Get move from the engine
 """
 
 
-def push_ai_move(board):
-    if not board.is_game_over():
-        if not board.turn:
-            # ! Stockfish Engine
-            move = get_stockfish_move(board)
-            board.push(move)
+def ai_move(board):
+    # ! Stockfish Engine
+    # return get_stockfish_move(board)
 
-            # ! Our Model's Engine
-            # move = get_ai_move(board, 1, "white")
-            # board.push(move)
+    # ! Our Model's Engine
+    return get_ai_move(board, 1, "black")
 
 
 """
@@ -291,10 +320,6 @@ def drawText(screen, text, size):
     text_object = font.render(text, 0, p.Color("Blue"))
     screen.blit(text_object, text_location.move(1, 1))
 
-
-"""
-TODO: Our Model VS Stockfish
-"""
 
 if __name__ == "__main__":
     main()
