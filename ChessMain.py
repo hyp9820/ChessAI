@@ -229,7 +229,8 @@ def highlight_squares(screen, board, sq_selected):
             screen.blit(s, (c * SQ_SIZE, r * SQ_SIZE))
 
             # TODO: Highlight moves from that square
-            s.fill(p.Color("yellow"))
+            s.set_alpha(150)
+            s.fill(p.Color("pink"))
 
             for move in board.legal_moves:
                 if move.from_square == selected_square:
