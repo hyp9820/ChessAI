@@ -1,6 +1,7 @@
 import chess
 import pygame as p
 import numpy as np
+from ChessEngine import get_stockfish_move, get_ai_move
 from utils import board_to_array, get_square_indexes, get_squares
 
 WIDTH = HEIGHT = 512
@@ -38,6 +39,11 @@ def load_images():
         )
 
 
+"""
+TODO: MAIN FUNCTION
+"""
+
+
 def main():
     p.init()
     screen = p.display.set_mode((WIDTH, HEIGHT))
@@ -52,9 +58,13 @@ def main():
     sq_selected = ()  # ? last click of the user (tuple: (row, column))
     player_clicks = []  # ? Keep track of player clicks (two_tuples: [(6,4), (4,4)])
     while running:
+
         for e in p.event.get():
+
             if e.type == p.QUIT:
                 running = False
+                break
+
             # ! Mouse Handlers
             elif e.type == p.MOUSEBUTTONDOWN:
 
@@ -105,6 +115,7 @@ def main():
                     # TODO: Undo the last move on 'Z' pressed.
                     if len(board.move_stack) > 0:
                         board.pop()
+                        board.pop()
                         sq_selected = ()
                         player_clicks = []
                     else:
@@ -138,6 +149,26 @@ def main():
 
         clock.tick(MAX_FPS)
         p.display.flip()
+
+        # ! AI Move
+        push_ai_move(board)
+
+
+"""
+TODO: Get move from the engine
+"""
+
+
+def push_ai_move(board):
+    if not board.is_game_over():
+        if not board.turn:
+            # ! Stockfish Engine
+            move = get_stockfish_move(board)
+            board.push(move)
+
+            # ! Our Model's Engine
+            # move = get_ai_move(board, 1, "white")
+            # board.push(move)
 
 
 """
@@ -260,6 +291,10 @@ def drawText(screen, text, size):
     text_object = font.render(text, 0, p.Color("Blue"))
     screen.blit(text_object, text_location.move(1, 1))
 
+
+"""
+TODO: Our Model VS Stockfish
+"""
 
 if __name__ == "__main__":
     main()
