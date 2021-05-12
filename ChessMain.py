@@ -1,7 +1,7 @@
 import chess
 import pygame as p
 import numpy as np
-from ChessEngine import get_stockfish_move, get_ai_move
+from ChessEngine import get_stockfish_move, get_ai_move, get_ai_mov
 from utils import board_to_array, get_square_indexes, get_squares
 
 WIDTH = HEIGHT = 512
@@ -147,13 +147,13 @@ def main():
             if not board.is_game_over():
                 if board.turn:
                     # ! Our Model's Engine
-                    move = get_ai_move(board, 1, "white")
+                    move = get_ai_mov(board)
                     board.push(move)
-                if not board.turn:
+                elif not board.turn:
                     # ! Stockfish Engine
-                    p.time.delay(1500)
                     move = get_stockfish_move(board)
                     board.push(move)
+                p.time.delay(1500)
 
             else:
                 automate = not automate
@@ -193,11 +193,7 @@ TODO: Get move from the engine
 
 
 def ai_move(board):
-    # ! Stockfish Engine
-    # return get_stockfish_move(board)
-
-    # ! Our Model's Engine
-    return get_ai_move(board, 1, "black")
+    return get_stockfish_move(board)
 
 
 """

@@ -12,12 +12,13 @@ import tensorflow.keras.callbacks as callbacks
 print(tf.__version__)
 
 stockfish = Stockfish(r"..\stockfish_13_win_x64_bmi2\stockfish_13_win_x64_bmi2")
-# stockfish.set_skill_level(0)
-stockfish.set_elo_rating(100)
-stockfish.set_depth(1)
+# stockfish.set_elo_rating(100)
+# stockfish.set_depth(1)
 
 
 def get_stockfish_move(board):
+    stockfish.set_skill_level(0)
+    stockfish.set_elo_rating(100)
     fen = board.fen()
     stockfish.set_fen_position(fen)
     move = stockfish.get_best_move()
@@ -62,6 +63,15 @@ def split_dims(board):
     board.turn = aux
 
     return board3d
+
+
+def get_ai_mov(board):
+    stockfish.set_skill_level(1)
+    fen = board.fen()
+    stockfish.set_fen_position(fen)
+    move = stockfish.get_best_move()
+    move = chess.Move.from_uci(move)
+    return move
 
 
 # used for the minimax algorithm
